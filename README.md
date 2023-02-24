@@ -5,8 +5,8 @@ Abstract
 ---------
 
 
-Additional Notes to Code provided
-----------------------------------
+Additional Notes to Code
+------------------------
 
 _algorithm.R_
 
