@@ -29,4 +29,4 @@ _algorithm.R_
 _dgp.R_
 
 1. The reader might want to implement additional DGP
-* Bounds provided in Gonzalez (2023) hold for any adversarial distribution $F_{U,V}$, does the reader is encouraged to feed any (bounded) distribution into `exp3_monop()`. However, for the empirical analysis in terms of regret or probability sampling, the user must also provide closed form solutions to \mathbb{E}_{F_{U,V}} S_i(x) and \max_x \mathbb{E}_{F_{U,V}} S_i(x).
+* Bounds provided in Gonzalez (2023) hold for any adversarial distribution $F_{U,V}$, thus the reader is encouraged to feed any (bounded) distribution into `exp3_monop()`. However, for the empirical analysis in terms of regret or probability sampling, the user must also provide closed form solutions to \mathbb{E}_{F_{U,V}} S_i(x) and \max_x \mathbb{E}_{F_{U,V}} S_i(x).
