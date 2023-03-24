@@ -1,5 +1,5 @@
 #--------------------------------------#
-# Algorithm 1: Functions and evaluation
+# Algorithm 1: Functions
 #--------------------------------------#
 
 ## Description: 
@@ -8,30 +8,16 @@
 # - Auxiliary (optimal) parameter generating functions
 # - Data preparation and plotting functions
 
-# Additionally, it evaluates all DGP described in Gonzalez (2023)
-
-# 0. Libraries and load files
-#----------------------------
-
-library(dplyr)        # For syntax
-library(ggplot2)      # For plotting
-library(future)       # General parallel computing tools
-library(future.apply) # User friendly parallel computing functions
-library(gridExtra)    # For general display
-
-# Load DGP
-source("dgp.R")
-
 # 1. Parameters Generator Function
 # --------------------------------
 
 param_gen = function(K){
-  c_1 = 1/50 * ( K / log(K) )^(1/3)
+  c_1 = 1/34 * ( K / log(K) )^(1/3)
   gamma = c_1 * (log(K) / K)^(1/3)
   c_3 = 10 * gamma 
   c_2 =  c_1 / (c_1 * c_3 + (K / log(K))^(1/3))
-  eta = c_2 * gamma^2
   B = c_3 / gamma
+  eta = gamma / (B+1)
   print(paste0("eta = ", eta,
                " B = ", B,
                " gamma = ", gamma))
@@ -44,7 +30,7 @@ param_gen = function(K){
 # Tempered Exp3 for Monopolist Wage Setting
 
 exp3_monop = function(B, eta, gamma, K, lambda, u, v, x_optim,
-                      K_store = 50){
+                      K_store){
   
   # Inputs
   # B, eta, gamma, K, lambda = parameters
@@ -127,8 +113,8 @@ exp3_monop = function(B, eta, gamma, K, lambda, u, v, x_optim,
     store$avg_cum_regret[i] = store$cum_regret[i] / i
     
     # Store probabilities of selected periods
-    if ((i-1)%%50 == 0){
-      t = round(i / 50)
+    if ((i-1)%%K_store == 0){
+      t = round(i / K_store)
       store_pib[(t*length(x_disc) + 1):(t*length(x_disc) +
                                           length(x_disc)), ]$p_ib = p_i
       store_pib[(t*length(x_disc) + 1):(t*length(x_disc) +
@@ -138,26 +124,59 @@ exp3_monop = function(B, eta, gamma, K, lambda, u, v, x_optim,
   }
   
   # Return outcomes
-  list("regret" = store$avg_cum_regret, "store_pib" = store_pib$p_ib)
+  list("regret" = store$avg_cum_regret, "store_pib" = store_pib$p_ib,
+       "indicator" = store$indic)
 
 }
 
 # 3. Data preparation and Plotting
 #---------------------------------
 
-plotting = function(results, K, expression, K_store = 50, label){
+plotting = function(results, K, expression, prob_work, label, 
+                    K_store, lambda, eta){
+  
   cum_regret = do.call(rbind, results[1,])
   
-  # Avg cum regret
+  # Avg cum regret (and additional statistics)
+  mod_quantile = function(matrix){
+    quantile(matrix, probs = c(.05, .25, .5, .75, .95))
+  }
+  cum_regret_quantiles = apply(cum_regret, 2, 
+                               FUN = mod_quantile) |> t() |> as_tibble()
+  colnames(cum_regret_quantiles) = c("p5", "p25", "p50", "p75", "p95")
   cum_regret_tibble = tibble(x = seq(1:K),
-                             y = colMeans(cum_regret))
+                             exp_regret = colMeans(cum_regret),
+                             var_regret = colVars(cum_regret)) |> 
+                      cbind(cum_regret_quantiles)
+  
+  # Plot average regret
   avg_cum_regret = cum_regret_tibble |> ggplot() +
-                   geom_smooth(aes(x = x, y = y), se = FALSE,
+                   geom_smooth(aes(x = x, y = exp_regret), se = FALSE,
                                color = "black") +
                    theme_minimal(base_size = 18) +
                    xlab("Period K") +
                    ylab("Average Cummulative Regret")
-
+  
+  # Plot regret additional percentiles
+  extra_cum_regret = cum_regret_tibble |> ggplot() +
+                   geom_smooth(aes(x = x, y = p50), se = FALSE,
+                               color = "black") +
+                   geom_smooth(aes(x = x, y = p25), se = FALSE, color = "blue") +
+                   geom_smooth(aes(x = x, y = p75), se = FALSE, color = "blue") +
+                   geom_smooth(aes(x = x, y = p5), se = FALSE, color = "red") +
+                   geom_smooth(aes(x = x, y = p95), se = FALSE, color = "red") +
+                   theme_minimal(base_size = 18) +
+                   xlab("Period K") +
+                   ylab("Cummulative Regret Percentiles")
+  
+  # Plot regret variance
+  var_cum_regret = cum_regret_tibble |> ggplot() +
+                   geom_smooth(aes(x = x, y = var_regret), se = FALSE,
+                               color = "black") +
+                   theme_minimal(base_size = 18) +
+                   xlab("Period K") +
+                   ylab("Cummulative Regret Variance")
+  
   # p_ib across K
   p_ib_across_K = do.call(rbind, results[2,])
   avg_p_ib_across_K = colMeans(p_ib_across_K)
@@ -166,14 +185,12 @@ plotting = function(results, K, expression, K_store = 50, label){
   x_disc = (b_seq - 1)/(params$B)
   times_arg = K/K_store
   
-  p_ib_plotting = tibble("p_ib" = avg_p_ib_across_K, 
+  p_ib_plotting = tibble("p_ib" = avg_p_ib_across_K,
                          "K_round" = rep(seq(from = 1, to = K, by = K_store), 
                                    each = length(x_disc)),
                          "x_disc" = rep(x_disc, times_arg))
   
   # Empirical S_i(x)
-  # Set sizes of titles. Ideally just one x title and one y title
-  max_pib = max(p_ib_plotting$p_ib)
   P = list()
   t = 1
   k_minus = 0
@@ -185,8 +202,8 @@ plotting = function(results, K, expression, K_store = 50, label){
                                             fill = "coral") +
                               theme_minimal() +
                               xlab("Action Space x") +
-                              ylab("Sampling probability") +
-                              ylim(0, max_pib) + 
+                              ylab("Log Probability") +
+                              scale_y_continuous(labels = NULL, breaks = NULL) +
                               facet_grid(~K_round)
     t = t+1
     k_minus = k
@@ -195,7 +212,8 @@ plotting = function(results, K, expression, K_store = 50, label){
   # Theoretical S_i(x)
   x_seq_plot = seq(0, 1, by = 0.01)
   plot_tib = tibble("x_disc" = x_seq_plot, 
-                    "s_ib" = expression(x_seq_plot))
+                    "s_ib" = exp(expression(x_seq_plot, lambda = lambda)))
+  # Downward shift for plotting considerations
   
   actual = plot_tib |> ggplot() +
                        geom_area(aes(x = x_disc,
@@ -204,100 +222,84 @@ plotting = function(results, K, expression, K_store = 50, label){
                                      fill = "coral2", size = 1) +
                        theme_minimal(base_size = 18) +
                        xlab("Action Space x") +
-                       ylab("Expected Monopolist Profit S(x)")
+                       ylab("Expected Welfare S(x)")
+  
+  # Empirical probability of work
+  indicator = do.call(rbind, results[3,])
+  store_indicator_MA = matrix(NA, nrow = nrow(indicator), ncol = ncol(indicator))
+
+  # Create Moving Averages (50 periods)
+  for (i in 1:nrow(indicator)){
+    for(j in 1:ncol(indicator)){
+      store_indicator_MA[i, j] = mean(indicator[i:max((i-50),0), j])
+    }
+  }
+  
+  # Avg empirical probability of work
+  indicator_tibble = tibble(x = seq(1:K),
+                             y = colMeans(store_indicator_MA))
+  indicator_plot = indicator_tibble |> ggplot() +
+    geom_smooth(aes(x = x, y = y), se = FALSE,
+                color = "black") +
+    geom_hline(aes(yintercept = prob_work), color = "red", size = 1) +
+    theme_minimal(base_size = 14) +
+    xlab("Period K") +
+    ylab("Moving Average (50 lags) - Probability of working")
   
   plot_list = list("avg_cum_regret" = plot(avg_cum_regret), 
                    "theory_welfare" = plot(actual), 
-                   "empirical_probs" = do.call("grid.arrange", c(P, nrow = 3)))
+                   "empirical_probs" = do.call(grid.arrange, c(P, nrow = 3)),
+                   "prob_work" = plot(indicator_plot),
+                   "var_cum_regret" = plot(var_cum_regret),
+                   "extra_cum_regret" = plot(extra_cum_regret))
   
+  eta_label = round(eta, 3)
   lapply(names(plot_list), 
-         function(x)ggsave(filename=paste("../plots/", label, "_", x,
+         function(x)ggsave(filename=paste("../plots/", label, "/",
+                                           label, "_", x, eta_label,
                                           ".jpeg",sep=""), 
                            plot = plot_list[[x]], bg = "white"))
   
 }
 
-final_display = function(R, data_function, B = params$B, eta = params$eta, 
-                         gamma = params$gamma, K = K, lambda = lambda,
-                         theory_function, label){
+final_display = function(R, data_function, B, eta, 
+                         gamma, K, lambda,
+                         theory_function, label, K_store = 50){
   
   simulation_data = data_function(K)
   
   # Prepare session for parallel computing
   plan(multisession(workers = 4))
   
-  results = future_replicate(R, exp3_monop(B = params$B, eta = 0.132, 
-                                           gamma = 0.029,
+  results = future_replicate(R, exp3_monop(B = B, eta = eta, 
+                                           gamma = gamma,
                                            K = K, lambda = lambda,
                                            u = simulation_data$u,
                                            v = simulation_data$v, 
-                                           x_optim = simulation_data$x_optim))
+                                           x_optim = simulation_data$x_optim,
+                                           K_store = K_store))
   
   plotting(results = results, K = K, 
-           expression = theory_function, label = label)
+           expression = theory_function, prob_work = simulation_data$prob_work,
+           label = label, K_store = K_store, lambda = lambda, eta = eta)
   
 }
 
-# 4. Evaluation
-#----------------------------------
-K = 500 # Time periods
-R = 1000 # Replications
+final_display_eta_loop = function(R, data_function, B = params$B, 
+                                  gamma = params$gamma, K = K, lambda = lambda,
+                                  theory_function, label, K_store = 50, eta_vector){
+  
+  future_sapply(X = eta_vector, FUN = final_display, 
+                R = R, data_function = data_function, B = B, 
+                gamma = gamma, K = K, lambda = lambda,
+                theory_function = theory_function, label = label, 
+                K_store = K_store, future.seed = T)
+}
 
-# Generate parameters
-params = param_gen(K = K)
-
-
-
-# 4.1. Uniform linear
-# --------------------
-lambda = 0.7
-final_display(R, data_function = unif_lin, 
-              B = params$B, eta = params$eta, gamma = params$gamma,
-              K = K, lambda = lambda,
-              theory_function = unif_lin_theory, label = "unif_lin")
-
-
-# 4.2. Uniform non-linear
-#--------------------------
-lambda = 0.8
-final_display(R, data_function = unif_non_lin, 
-              B = params$B, eta = params$eta, gamma = params$gamma,
-              K = K, lambda = lambda,
-              theory_function = unif_non_lin_theory, label = "unif_non_lin")
-
-# 4.3. Uniform - Uniform
-#-----------------------
-lambda = 0.7
-final_display(R, data_function = unif_unif, 
-              B = params$B, eta = params$eta, gamma = params$gamma,
-              K = K, lambda = lambda,
-              theory_function = unif_unif_theory, label = "unif_unif")
-
-# 4.4. Bernouilli linear
-#-----------------------
-# Probability p is imputed in dgp.R
-final_display(R, data_function = bern_lin, 
-              B = params$B, eta = params$eta, gamma = params$gamma,
-              K = K, lambda = lambda,
-              theory_function = bern_lin_theory, label = "bern_lin")
-
-# 4.5. Beta(2, 1) linear
-# --------------------
-final_display(R, data_function = beta21_lin, 
-              B = params$B, eta = params$eta, gamma = params$gamma,
-              K = K, lambda = lambda,
-              theory_function = beta21_lin_theory, label = "beta21_lin")
-
-# 4.6. Beta(1/2, 1/2) linear
-# --------------------
-final_display(R, data_function = beta05_lin, 
-              B = params$B, eta = params$eta, gamma = params$gamma,
-              K = K, lambda = lambda,
-              theory_function = beta05_lin_theory, label = "beta05_lin")
-
-# 4.7. Beta(2, 1) non-linear
-# -------------------------
-final_display(R, data_function = beta21_non_lin, 
-              B = params$B, eta = params$eta, gamma = params$gamma,
-              K = K, lambda = lambda,
-              theory_function = beta21_non_lin_theory, label = "beta21_non_lin")
+log_sequence = function(from, to, length.out){
+  steps = c()
+  for (i in 1:length.out){
+    steps[i] = (to - from) / 2^i
+  }
+  rev(steps)
+}
