@@ -16,11 +16,15 @@ library(future)       # General parallel computing tools
 library(future.apply) # User friendly parallel computing functions
 library(gridExtra)    # For general display
 library(resample)     # For quick colVars()
+library(latex2exp)    # For LaTeX titles in graphs
+library(pracma)       # For erf() access
+
 
 # Load DGP
 lambda = 0.7
-source("algorithm.R")
 source("dgp.R")
+source("algorithm.R")
+source("additional.R")
 
 
 # 1. Benchmark Evaluation
@@ -32,26 +36,27 @@ R = 100 # Replications
 # Generate parameters
 params = param_gen(K = K)
 
+# Set seed
+set.seed(1234)
 
 # 1.1. Uniform linear
 # --------------------
-final_display(R, data_function = unif_lin, 
+final_display(R = 1000, data_function = unif_lin, 
               B = params$B, eta = 0.132, gamma = 0.029,
               K = K, lambda = lambda,
               theory_function = unif_lin_theory, label = "unif_lin")
 
 
-# 1.2. Uniform non-linear
+# 1.2. Uniform non-linear (with small eta, larger K and K_store)
 #--------------------------
-# It seems to work better with smaller eta
-final_display(R, data_function = unif_non_lin, 
-              B = params$B, eta = 0.033, gamma = 0.029,
-              K = K, lambda = lambda,
+final_display(R = 1000, data_function = unif_non_lin, 
+              B = params$B, eta = 0.025, gamma = 0.029,
+              K = 1000, lambda = lambda, K_store = 100,
               theory_function = unif_non_lin_theory, label = "unif_non_lin")
 
 # 1.3. Uniform - Uniform
 #-----------------------
-final_display(R, data_function = unif_unif, 
+final_display(R = 1000, data_function = unif_unif, 
               B = params$B, eta = 0.132, gamma = 0.029,
               K = K, lambda = lambda,
               theory_function = unif_unif_theory, label = "unif_unif")
@@ -59,52 +64,116 @@ final_display(R, data_function = unif_unif,
 # 1.4. Bernouilli linear
 #-----------------------
 # Probability p is imputed in dgp.R
-final_display(R, data_function = bern_lin, 
+final_display(R = 1000, data_function = bern_lin, 
               B = params$B, eta = 0.132, gamma = 0.029,
               K = K, lambda = lambda,
               theory_function = bern_lin_theory, label = "bern_lin")
 
 # 1.5. Beta(2, 1) linear
 # --------------------
-final_display(R, data_function = beta21_lin, 
+final_display(R = 1000, data_function = beta21_lin, 
               B = params$B, eta = 0.132, gamma = 0.029,
-              K = K, lambda = lambda,
+              K = 500, lambda = lambda,
               theory_function = beta21_lin_theory, label = "beta21_lin")
 
 # 1.6. Beta(1/2, 1/2) linear
 # --------------------
-final_display(R, data_function = beta05_lin, 
+final_display(R = 1000, data_function = beta05_lin, 
               B = params$B, eta = 0.132, gamma = 0.029,
-              K = K, lambda = lambda,
+              K = 500, lambda = lambda,
               theory_function = beta05_lin_theory, label = "beta05_lin")
 
 # 1.7. Beta(2, 1) non-linear
 # -------------------------
-final_display(R, data_function = beta21_non_lin, 
+final_display(R = 1000, data_function = beta21_non_lin, 
               B = params$B, eta = 0.132, gamma = 0.029,
-              K = K, lambda = lambda,
+              K = 500, lambda = lambda,
               theory_function = beta21_non_lin_theory, label = "beta21_non_lin")
 
-# 2. Worst-case eta
-#-------------------
-# 2.1. Uniform linear
-# --------------------
-eta_vector = log_sequence(from = params$eta, to = 0.2, length.out = 2)
-final_display_eta_loop(R = 100, data_function = unif_lin, B = params$B, 
-                       gamma = params$gamma, K = 1000, lambda = 0.7,
-                       theory_function = unif_lin_theory, label = "unif_lin_add",
-                       K_store = 200, eta_vector = eta_vector)
 
-# 2.2. Uniform non-linear
-#------------------------
-eta_vector = log_sequence(from = params$eta, to = 0.2, length.out = 10)
-final_display_eta_loop(R = 100, data_function = unif_non_lin, B = params$B, 
-                       gamma = params$gamma, K = 5000, lambda = 0.7,
-                       theory_function = unif_non_lin_theory, label = "unif_non_lin_add",
-                       K_store = 500, eta_vector = eta_vector)
+# 2. SD/eta Robustness Check
+#----------------------------
 
+set.seed(1234)
+eta_values = log_sequence(0.0027, 2, 5)
+sd_vector = c(0.4, 0.6, 0.8, 1)
+for (eta_val in eta_values){
+  multi_final_display_sd(R = 1000, data_function = unif_lin_random, B = params$B,
+                         eta = eta_val, gamma = params$gamma, K = 500, lambda = lambda,
+                         theory_function = unif_lin_random_theory, 
+                         label = "unif_lin_random", K_store = 100, sd_vector = sd_vector)
+}
 
-# 2.Parameter Sensitivity
-#------------------------
+# 3. Minimum Wage Analysis
+#-------------------------
+mw_vector = c(0, 0.2, 0.3, 0.4, 0.6)
+multi_final_display_mw(R = 50, B = params$B, data_function = unif_lin_high_u_low_v,
+                       eta = 0.132, gamma = 0.029, K = 1000, lambda = lambda,
+                       theory_function = unif_lin_theory_high_u_low_v, 
+                       label = "unif_lin_mw_hl", K_store = 100, 
+                       mw_vector = mw_vector) #x_optim = 1/4
 
-# Intuition, you 
+multi_final_display_mw(R = 50, B = params$B, data_function = unif_lin_high_u_high_v,
+                       eta = 0.132, gamma = 0.029, K = 1000, lambda = lambda,
+                       theory_function = unif_lin_theory_high_u_high_v, 
+                       label = "unif_lin_mw_hh", K_store = 100, 
+                       mw_vector = mw_vector) # x_optim = 1/2
+
+multi_final_display_mw(R = 50, B = params$B, data_function = unif_lin_low_u_low_v,
+                       eta = 0.132, gamma = 0.029, K = 1000, lambda = lambda,
+                       theory_function = unif_lin_theory_low_u_low_v, 
+                       label = "unif_lin_mw_ll", K_store = 100, 
+                       mw_vector = mw_vector) # x_optim = 3/16
+
+multi_final_display_mw(R = 50, B = params$B, data_function = unif_lin_low_u_high_v,
+                       eta = 0.132, gamma = 0.029, K = 1000, lambda = lambda,
+                       theory_function = unif_lin_theory_low_u_high_v, 
+                       label = "unif_lin_mw_lh", K_store = 100, 
+                       mw_vector = mw_vector) # x_optim = 3/8
+
+# 3. LIPC
+#-------------------------
+sqrt(log(K^(1/3)) / K^(1/3))
+p_theta_vector = c(1, 0.8, 0.6, 0.4, 0.2)
+multi_final_display_lipc(R = 100, B = params$B, data_function = unif_lin_high_u_low_v,
+                       eta = 0.132, gamma = 0.029, K = 500, lambda = lambda,
+                       theory_function = unif_lin_theory_high_u_low_v, 
+                       label = "unif_lin_lipc_hl", K_store = 50, 
+                       p_theta_vector = p_theta_vector) #x_optim = 1/4
+
+multi_final_display_lipc(R = 100, B = params$B, data_function = unif_lin_high_u_high_v,
+                       eta = 0.132, gamma = 0.029, K = 500, lambda = lambda,
+                       theory_function = unif_lin_theory_high_u_high_v, 
+                       label = "unif_lin_lipc_hh", K_store = 50, 
+                       p_theta_vector = p_theta_vector) # x_optim = 1/2
+
+multi_final_display_lipc(R = 100, B = params$B, data_function = unif_lin_low_u_low_v,
+                       eta = 0.132, gamma = 0.029, K = 500, lambda = lambda,
+                       theory_function = unif_lin_theory_low_u_low_v, 
+                       label = "unif_lin_lipc_ll", K_store = 50, 
+                       p_theta_vector = p_theta_vector) # x_optim = 3/16
+
+multi_final_display_lipc(R = 100, B = params$B, data_function = unif_lin_low_u_high_v,
+                       eta = 0.132, gamma = 0.029, K = 500, lambda = lambda,
+                       theory_function = unif_lin_theory_low_u_high_v, 
+                       label = "unif_lin_lipc_lh", K_store = 50, 
+                       p_theta_vector = p_theta_vector) # x_optim = 3/8
+
+# 4. Productivity Shocks
+#----------------------------
+# You should consider looping across different values of theta, what looks super interesting
+final_display_shocks(R = 20, data_function = unif_lin_unchanged_fair, 
+                     B = params$B, eta = 0.00267, 
+                     gamma = 0.029, K = 20000, lambda = 0.1,
+                     theory_function_1 = unif_lin_theory_shock_first,
+                     theory_function_2 = unif_lin_theory_shock_second_unch,
+                     label = "unif_lin_un_fair",
+                     K_store = 1000, sd = 0, mw = 0)
+
+# To do list:
+# - Understand theory welfare plot
+# - Even more periods??
+# - Lower eta (lowering eta does a bit the trick). Y eso que no lo estamos comparando con el unfair. Estamos jodidos!
+# - Do the rest of them
+# - Slides
+# Study slides
