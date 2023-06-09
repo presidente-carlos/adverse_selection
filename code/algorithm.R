@@ -171,24 +171,26 @@ plotting = function(results, K, expression, prob_work, label,
   # Plot average regret
   avg_cum_regret = cum_regret_tibble |> ggplot() +
                    geom_smooth(aes(x = x, y = exp_regret), se = FALSE,
-                               color = "black") +
+                               color = "black", linewidth = 1.5) +
                    theme_minimal(base_size = 18) +
                    xlab("Period K") +
-                   ylab("Average Cummulative Regret") +
-                   theme(axis.title=element_text(size=16))
+                   # ylab("Average Cummulative Regret") +
+                   ylab("") +
+                   theme(axis.title=element_text(size=20))
   
   # Plot regret additional percentiles
   extra_cum_regret = cum_regret_tibble |> ggplot() +
                    geom_smooth(aes(x = x, y = p50), se = FALSE,
-                               color = "black") +
-                   geom_smooth(aes(x = x, y = p25), se = FALSE, color = "blue") +
-                   geom_smooth(aes(x = x, y = p75), se = FALSE, color = "blue") +
-                   geom_smooth(aes(x = x, y = p5), se = FALSE, color = "red") +
-                   geom_smooth(aes(x = x, y = p95), se = FALSE, color = "red") +
+                               color = "black", linewidth = 1.5) +
+                   geom_smooth(aes(x = x, y = p25), se = FALSE, color = "blue", linewidth = 1.5) +
+                   geom_smooth(aes(x = x, y = p75), se = FALSE, color = "blue", linewidth = 1.5) +
+                   geom_smooth(aes(x = x, y = p5), se = FALSE, color = "red", linewidth = 1.5) +
+                   geom_smooth(aes(x = x, y = p95), se = FALSE, color = "red", linewidth = 1.5) +
                    theme_minimal(base_size = 18) +
                    xlab("Period K") +
-                   ylab("Cummulative Regret Percentiles") +
-                   theme(axis.title=element_text(size=16))
+                   # ylab("Cummulative Regret Percentiles") +
+                   ylab("") +
+                   theme(axis.title=element_text(size=20))
   
   # Plot regret variance
   var_cum_regret = cum_regret_tibble |> ggplot() +
@@ -196,8 +198,9 @@ plotting = function(results, K, expression, prob_work, label,
                                color = "black") +
                    theme_minimal(base_size = 18) +
                    xlab("Period K") +
-                   ylab("Cummulative Regret Variance") +
-                   theme(axis.title=element_text(size=16))
+                   # ylab("Cummulative Regret Variance") +
+                   ylab("") +
+                   theme(axis.title=element_text(size=20))
   
   # p_ib across K
   p_ib_across_K = do.call(rbind, results[2,])
@@ -222,10 +225,11 @@ plotting = function(results, K, expression, prob_work, label,
                               geom_area(aes(x = x_disc,
                                             y = p_ib), color = "black", 
                                             fill = "coral") +
-                              theme_minimal() +
+                              theme_minimal(base_size = 18) +
                               xlab(TeX("Action Space $\\Omega_X$")) +
-                              ylab("Probability") +
-                              theme(axis.title=element_text(size=16)) +
+                              # ylab("Probability") + Slides Presentation
+                              ylab("") +
+                              theme(axis.title=element_text(size=20)) +
                               scale_y_continuous(labels = NULL, breaks = NULL) +
                               facet_grid(~K_round)
     t = t+1
@@ -248,8 +252,9 @@ plotting = function(results, K, expression, prob_work, label,
                                          fill = "coral2", linewidth = 1) +
                            theme_minimal(base_size = 18) +
                            xlab(TeX("Action Space $\\Omega_X$")) +
-                           ylab(TeX("Expected Welfare $$\\exp(\\sum S(x))$$")) +
-                           theme(axis.title=element_text(size=16),
+                           # ylab(TeX("Expected Welfare $$\\exp(\\sum S(x))$$")) +
+                           ylab("") +
+                           theme(axis.title=element_text(size=20),
                                  axis.text.y=element_blank())
   
   # Theoretical \exp(S)_i(x)
@@ -268,8 +273,9 @@ plotting = function(results, K, expression, prob_work, label,
                                  fill = "coral2", linewidth = 1) +
                        theme_minimal(base_size = 18) +
                        xlab(TeX("Action Space $\\Omega_X$")) +
-                       ylab(TeX("Expected Welfare $$\\exp(S(x))$$")) +
-                       theme(axis.title=element_text(size=16),
+                       # ylab(TeX("Expected Welfare $$\\exp(S(x))$$")) +
+                       ylab("") +
+                       theme(axis.title=element_text(size=20),
                              axis.text.y=element_blank())
   
   # Empirical probability of work
@@ -288,13 +294,14 @@ plotting = function(results, K, expression, prob_work, label,
                              y = colMeans(store_indicator_MA))
   indicator_plot = indicator_tibble |> ggplot() +
                                        geom_smooth(aes(x = x, y = y), se = FALSE,
-                                                   color = "black") +
+                                                   color = "black", linewidth = 1.5) +
                                        geom_hline(aes(yintercept = prob_work), 
-                                                  color = "red", linewidth = 1) +
+                                                  color = "red", linewidth = 1.5) +
                                        theme_minimal(base_size = 18) +
                                        xlab("Period K") +
-                                       ylab("Probability of working - MA 100 periods") +
-                                       theme(axis.title=element_text(size=16))
+                                       # ylab("Probability of working - MA 100 periods") +
+                                       ylab("") +
+                                       theme(axis.title=element_text(size=20))
   
   # Final plotting and saving
   plot_list = list("avg_cum_regret" = plot(avg_cum_regret), 

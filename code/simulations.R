@@ -18,6 +18,7 @@ library(gridExtra)    # For general display
 library(resample)     # For quick colVars()
 library(latex2exp)    # For LaTeX titles in graphs
 library(pracma)       # For erf() access
+library(forcats)  # For not-stacked area plots
 
 
 # Load DGP
@@ -30,7 +31,7 @@ source("additional.R")
 # 1. Benchmark Evaluation
 #----------------------------------
 K = 500 # Time periods
-R = 100 # Replications
+# R = 100 # Replications
 
 
 # Generate parameters
@@ -50,7 +51,7 @@ final_display(R = 1000, data_function = unif_lin,
 # 1.2. Uniform non-linear (with small eta, larger K and K_store)
 #--------------------------
 final_display(R = 1000, data_function = unif_non_lin, 
-              B = params$B, eta = 0.025, gamma = 0.029,
+              B = params$B, eta = 0.05, gamma = 0.029,
               K = 1000, lambda = lambda, K_store = 100,
               theory_function = unif_non_lin_theory, label = "unif_non_lin")
 
@@ -107,25 +108,25 @@ for (eta_val in eta_values){
 # 3. Minimum Wage Analysis
 #-------------------------
 mw_vector = c(0, 0.2, 0.3, 0.4, 0.6)
-multi_final_display_mw(R = 50, B = params$B, data_function = unif_lin_high_u_low_v,
+multi_final_display_mw(R = 1000, B = params$B, data_function = unif_lin_high_u_low_v,
                        eta = 0.132, gamma = 0.029, K = 1000, lambda = lambda,
                        theory_function = unif_lin_theory_high_u_low_v, 
                        label = "unif_lin_mw_hl", K_store = 100, 
                        mw_vector = mw_vector) #x_optim = 1/4
 
-multi_final_display_mw(R = 50, B = params$B, data_function = unif_lin_high_u_high_v,
+multi_final_display_mw(R = 1000, B = params$B, data_function = unif_lin_high_u_high_v,
                        eta = 0.132, gamma = 0.029, K = 1000, lambda = lambda,
                        theory_function = unif_lin_theory_high_u_high_v, 
                        label = "unif_lin_mw_hh", K_store = 100, 
                        mw_vector = mw_vector) # x_optim = 1/2
 
-multi_final_display_mw(R = 50, B = params$B, data_function = unif_lin_low_u_low_v,
+multi_final_display_mw(R = 1000, B = params$B, data_function = unif_lin_low_u_low_v,
                        eta = 0.132, gamma = 0.029, K = 1000, lambda = lambda,
                        theory_function = unif_lin_theory_low_u_low_v, 
                        label = "unif_lin_mw_ll", K_store = 100, 
                        mw_vector = mw_vector) # x_optim = 3/16
 
-multi_final_display_mw(R = 50, B = params$B, data_function = unif_lin_low_u_high_v,
+multi_final_display_mw(R = 1000, B = params$B, data_function = unif_lin_low_u_high_v,
                        eta = 0.132, gamma = 0.029, K = 1000, lambda = lambda,
                        theory_function = unif_lin_theory_low_u_high_v, 
                        label = "unif_lin_mw_lh", K_store = 100, 
@@ -133,27 +134,26 @@ multi_final_display_mw(R = 50, B = params$B, data_function = unif_lin_low_u_high
 
 # 3. LIPC
 #-------------------------
-sqrt(log(K^(1/3)) / K^(1/3))
 p_theta_vector = c(1, 0.8, 0.6, 0.4, 0.2)
-multi_final_display_lipc(R = 100, B = params$B, data_function = unif_lin_high_u_low_v,
+multi_final_display_lipc(R = 1000, B = params$B, data_function = unif_lin_high_u_low_v,
                        eta = 0.132, gamma = 0.029, K = 500, lambda = lambda,
                        theory_function = unif_lin_theory_high_u_low_v, 
                        label = "unif_lin_lipc_hl", K_store = 50, 
                        p_theta_vector = p_theta_vector) #x_optim = 1/4
 
-multi_final_display_lipc(R = 100, B = params$B, data_function = unif_lin_high_u_high_v,
+multi_final_display_lipc(R = 1000, B = params$B, data_function = unif_lin_high_u_high_v,
                        eta = 0.132, gamma = 0.029, K = 500, lambda = lambda,
                        theory_function = unif_lin_theory_high_u_high_v, 
                        label = "unif_lin_lipc_hh", K_store = 50, 
                        p_theta_vector = p_theta_vector) # x_optim = 1/2
 
-multi_final_display_lipc(R = 100, B = params$B, data_function = unif_lin_low_u_low_v,
+multi_final_display_lipc(R = 1000, B = params$B, data_function = unif_lin_low_u_low_v,
                        eta = 0.132, gamma = 0.029, K = 500, lambda = lambda,
                        theory_function = unif_lin_theory_low_u_low_v, 
                        label = "unif_lin_lipc_ll", K_store = 50, 
                        p_theta_vector = p_theta_vector) # x_optim = 3/16
 
-multi_final_display_lipc(R = 100, B = params$B, data_function = unif_lin_low_u_high_v,
+multi_final_display_lipc(R = 1000, B = params$B, data_function = unif_lin_low_u_high_v,
                        eta = 0.132, gamma = 0.029, K = 500, lambda = lambda,
                        theory_function = unif_lin_theory_low_u_high_v, 
                        label = "unif_lin_lipc_lh", K_store = 50, 
@@ -161,14 +161,37 @@ multi_final_display_lipc(R = 100, B = params$B, data_function = unif_lin_low_u_h
 
 # 4. Productivity Shocks
 #----------------------------
-# You should consider looping across different values of theta, what looks super interesting
-final_display_shocks(R = 20, data_function = unif_lin_unchanged_fair, 
+final_display_shocks(R = 1000, data_function = unif_lin_unchanged_fair, 
                      B = params$B, eta = 0.00267, 
-                     gamma = 0.029, K = 20000, lambda = 0.1,
+                     gamma = 0.029, K = 10000, lambda = 0.1,
                      theory_function_1 = unif_lin_theory_shock_first,
                      theory_function_2 = unif_lin_theory_shock_second_unch,
                      label = "unif_lin_un_fair",
-                     K_store = 1000, sd = 0, mw = 0)
+                     K_store = 500, sd = 0, mw = 0)
+
+final_display_shocks(R = 1000, data_function = unif_lin_unchanged_unfair, 
+                     B = params$B, eta = 0.00267, 
+                     gamma = 0.029, K = 10000, lambda = 0.1,
+                     theory_function_1 = unif_lin_theory_shock_first,
+                     theory_function_2 = unif_lin_theory_shock_second_unch,
+                     label = "unif_lin_un_unfair",
+                     K_store = 500, sd = 0, mw = 0)
+
+final_display_shocks(R = 1000, data_function = unif_lin_changed_fair, 
+                     B = params$B, eta = 0.00267, 
+                     gamma = 0.029, K = 10000, lambda = 0.1,
+                     theory_function_1 = unif_lin_theory_shock_first,
+                     theory_function_2 = unif_lin_theory_shock_second_ch,
+                     label = "unif_lin_changed_fair",
+                     K_store = 500, sd = 0, mw = 0)
+
+final_display_shocks(R = 1000, data_function = unif_lin_changed_unfair, 
+                     B = params$B, eta = 0.00267, 
+                     gamma = 0.029, K = 10000, lambda = 0.1,
+                     theory_function_1 = unif_lin_theory_shock_first,
+                     theory_function_2 = unif_lin_theory_shock_second_ch,
+                     label = "unif_lin_changed_unfair",
+                     K_store = 500, sd = 0, mw = 0)
 
 # To do list:
 # - Understand theory welfare plot

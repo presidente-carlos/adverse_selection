@@ -262,12 +262,16 @@ multi_plotting_mw = function(multi_results, K, expression, prob_work, label,
   # Plot average regret
   avg_cum_regret = cum_regret_tibble |> ggplot() +
     geom_smooth(aes(x = x, y = exp_regret, 
-                    color = as.factor(mw), linetype = binding), se = FALSE) +
+                    color = as.factor(mw), linetype = binding), 
+                se = FALSE, linewidth = 1.5) +
     theme_minimal(base_size = 18) +
     xlab("Period K") +
-    ylab("Average Cummulative Regret") +
+    # ylab("Average Cummulative Regret") +
+    ylab("") +
     theme(axis.title=element_text(size=16)) +
-    labs(color = "Minimum Wage", linetype = "Binding?")
+    labs(color = "Minimum Wage", linetype = "Binding?",
+         legend.text = element_text(size=20),
+         legend.title = element_text(size=20))
   
   
   # Tibble for work_probability
@@ -379,8 +383,7 @@ multi_plotting_mw = function(multi_results, K, expression, prob_work, label,
 
 # 2b) Replication function (+ data generation)
 #-----------------------------------------
-rep_function_mw = function(R, B, data_function, 
-                           eta, gamma, K, lambda, K_store, u, v, x_optim, mw){
+rep_function_mw = function(R, B, eta, gamma, K, lambda, K_store, u, v, x_optim, mw){
   
   # Prepare session for parallel computing
   plan(multisession(workers = 6))
@@ -388,8 +391,8 @@ rep_function_mw = function(R, B, data_function,
                                  gamma = gamma,
                                  K = K, lambda = lambda,
                                  u = u,
-                                 v = simulation_data$v, 
-                                 x_optim = simulation_data$x_optim,
+                                 v = v, 
+                                 x_optim = x_optim,
                                  K_store = K_store,
                                  mw = mw))
 }
@@ -403,8 +406,7 @@ multi_final_display_mw = function(R, B, data_function, eta,
   
   # Algorithm 1 (replicated)
   multi_results = future_sapply(X = mw_vector, FUN = rep_function_mw,
-                                R = R, B = B, data_function = data_function,
-                                eta = eta, gamma = gamma, K = K, lambda = lambda,
+                                R = R, B = B, eta = eta, gamma = gamma, K = K, lambda = lambda,
                                 K_store = K_store, u = simulation_data$u,
                                 v = simulation_data$v, 
                                 x_optim = simulation_data$x_optim)
@@ -460,11 +462,14 @@ multi_plotting_lipc = function(multi_results, K, expression, prob_work, label,
   # Plot average regret
   avg_cum_regret = cum_regret_tibble |> ggplot() +
     geom_smooth(aes(x = x, y = exp_regret, 
-                    color = as.factor(p_theta)), se = FALSE) +
+                    color = as.factor(p_theta)), se = FALSE, linewidth = 1.5) +
     theme_minimal(base_size = 18) +
     xlab("Period K") +
-    ylab("Average Cummulative Regret") +
-    theme(axis.title=element_text(size=16)) +
+    # ylab("Average Cummulative Regret") +
+    ylab("") +
+    theme(axis.title=element_text(size=16), 
+          legend.text = element_text(size=20),
+          legend.title = element_text(size=20)) +
     labs(color = TeX("$$p_\\theta"))
   
   
@@ -572,8 +577,7 @@ multi_plotting_lipc = function(multi_results, K, expression, prob_work, label,
 
 # 3b) Replication function (+ data generation)
 #-----------------------------------------
-rep_function_lipc = function(R, B, data_function, 
-                           eta, gamma, K, lambda, K_store, u, v, x_optim, p_theta){
+rep_function_lipc = function(R, B, eta, gamma, K, lambda, K_store, u, v, x_optim, p_theta){
   
   # Prepare session for parallel computing
   plan(multisession(workers = 6))
@@ -581,8 +585,8 @@ rep_function_lipc = function(R, B, data_function,
                                  gamma = gamma,
                                  K = K, lambda = lambda,
                                  u = u,
-                                 v = simulation_data$v, 
-                                 x_optim = simulation_data$x_optim,
+                                 v = v, 
+                                 x_optim = x_optim,
                                  K_store = K_store,
                                  p_theta = p_theta))
 }
@@ -596,8 +600,7 @@ multi_final_display_lipc = function(R, B, data_function, eta,
   
   # Algorithm 2 (replicated)
   multi_results = future_sapply(X = p_theta_vector, FUN = rep_function_lipc,
-                                R = R, B = B, data_function = data_function,
-                                eta = eta, gamma = gamma, K = K, lambda = lambda,
+                                R = R, B = B, eta = eta, gamma = gamma, K = K, lambda = lambda,
                                 K_store = K_store, u = simulation_data$u,
                                 v = simulation_data$v, 
                                 x_optim = simulation_data$x_optim)
@@ -623,13 +626,16 @@ plotting_prod_shock = function(results, K, expression_1, expression_2,
   # Plot average regret
   avg_cum_regret = cum_regret_tibble |> ggplot() +
     geom_smooth(aes(x = x, y = exp_regret), se = FALSE,
-                color = "black") +
+                color = "black", linewidth = 1.5) +
     theme_minimal(base_size = 18) +
-    geom_vline(aes(xintercept = K/10), linetype = "dashed", color = "red") +
-    geom_hline(aes(yintercept = mean(exp_regret)), linetype = "dashed", color = "black") +
+    geom_vline(aes(xintercept = K/10), linetype = "dashed", color = "red", linewidth = 1.5) +
+    geom_hline(aes(yintercept = mean(exp_regret)), linetype = "dashed", color = "black", linewidth = 1.5) +
     xlab("Period K") +
-    ylab("Average Cummulative Regret") +
-    theme(axis.title=element_text(size=16))
+    # ylab("Average Cummulative Regret") +
+    ylab("") +
+    theme(axis.title=element_text(size=16),
+          legend.text = element_text(size=20),
+          legend.title = element_text(size=20))
   
   # p_ib across K
   p_ib_across_K = do.call(rbind, results[2,])

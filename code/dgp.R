@@ -219,29 +219,26 @@ unif_lin_low_u_high_v = function(K){
 
 #9. Productivity shock
 #---------------------
-# Setting lambda = 0.35
-# Using 1,500 periods
-
-# The thing here is that the optimal policy from the beginning coincides
-# with the optimal policy after the change
-# it would be great if the optimal policy ex-post would be different from the optimal policy ex-ante
-# and the optimal policy ONLY ex-post
-
-# Presentation idea: Present both overlaying with translucent colors
-# Both change and no-change have the same theory function
-
+# Theory functions
+# Pre-shock
 unif_lin_theory_shock_first = function(x, lambda){
   ifelse(x<1/4, 0, ifelse(x>=1/4 & x<1/2, (2- lambda)/2 * (2*x^2 - 1/8)
                           - (1-lambda)*(2*x^2 - x/2), 
                           (2 - lambda)/2 * 3/4 - (1-lambda)*x))
 }
-
+# Post-shock with V unchanged
 unif_lin_theory_shock_second_unch = function(x, lambda){
   ifelse(x<1/4, 0, ifelse(x>=1/4 & x<1/2, (2 - lambda)/2 * (2*x^2 - 1/8)
                           - (1-lambda)*(2*x^2 - x/2) - 1/2 * (2*x - 1/2), 
                           (2 - lambda)/2 * 3/4 - (1-lambda)*x - 1/2)) 
 }
 
+# Pre-shock with change in V
+unif_lin_theory_shock_second_ch = function(x, lambda){
+  ifelse(x<1/4, lambda * x^2, (2 - lambda) / 2 * 1/4 - (1- lambda)*x)
+}
+
+# Unchanged V - Fair Competitor Class
 unif_lin_unchanged_fair = function(K){
   u_orig = runif(K, 1/2, 1)
   u_first = u_orig[1:(K/10)]
@@ -251,6 +248,7 @@ unif_lin_unchanged_fair = function(K){
          "v" = v, x_optim = 0.25)
 }
 
+# Unchanged V - Unfair Competitor Class
 unif_lin_unchanged_unfair = function(K){
   u_orig = runif(K, 1/2, 1)
   u_first = u_orig[1:(K/10)]
@@ -259,10 +257,6 @@ unif_lin_unchanged_unfair = function(K){
   tibble("u" = c(u_first, u_second),
          "v" = v, 
          x_optim = c(rep(0.5, K/10), rep(0.25, 9*K/10)))
-}
-
-unif_lin_theory_shock_second_ch = function(x, lambda){
-  ifelse(x<1/4, lambda * x^2, (2 - lambda) / 2 * 1/4 - (1- lambda)*x)
 }
 
 unif_lin_changed_fair = function(K){

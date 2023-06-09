@@ -65,17 +65,18 @@ lower_bound_tibble = mapply(wrap_lower_bound,
 maxs = lower_bound_tibble |> group_by(epsilon) |> summarize(max = max(welfare))
 
 lb_plot = lower_bound_tibble |> ggplot() +
-          geom_line(aes(x = x, y = welfare, color = epsilon), linewidth = 1) +
+          geom_line(aes(x = x, y = welfare, color = epsilon), linewidth = 1.5) +
           scale_color_manual(values = alpha(c("black", "coral1"))) +
-          theme_minimal(base_size = 14) +
+          theme_minimal(base_size = 18) +
           geom_hline(aes(yintercept = maxs$max[1]), color = "black",
                      linewidth = 0.75, linetype = "dashed") +
           geom_hline(aes(yintercept = maxs$max[2]), color = "coral1",
                      linewidth = 0.75, linetype = "dashed") +
-          ylab("Expected Welfare E[S(x)]") +
+          # ylab("Expected Welfare E[S(x)]") + Slides Presentation
+          ylab("") +
           xlab("Policy Space") +
           labs(color = TeX("$$\\epsilon$$")) +
-          theme(axis.title=element_text(size=16))
+          theme(axis.title=element_text(size=20))
   
   
   ggsave(lb_plot, filename="../plots/lower_bound.jpeg", bg = "white")
@@ -83,16 +84,19 @@ lb_plot = lower_bound_tibble |> ggplot() +
 # Change for graphic considerations
 lower_bound_tibble = rbind(lower_bound_tibble, c(0.25, 99, 1, 0),
                            c(0.25, 99, -1, 0)) |> arrange(demand)
+lower_bound_tibble = lower_bound_tibble |> 
+                     mutate(demand = ifelse(epsilon == "1", demand + 0.01, demand))
   
 demand_plot = lower_bound_tibble |> ggplot() +
-    geom_line(aes(x = x, y = demand, color = epsilon), linewidth = 1) +
+    geom_line(aes(x = x, y = demand, color = epsilon), linewidth = 1.5) +
     scale_color_manual(values = alpha(c("black", "coral1"))) +
-    ylim(0.25, 1) +
-    theme_minimal(base_size = 14) +
-    ylab("P(x >= v)") +
+    ylim(0.25, 1.1) +
+    theme_minimal(base_size = 18) +
+    # ylab("P(x >= v)") + Slides presentation
+    ylab("") +
     xlab("Policy Space") +
     labs(color = TeX("$$\\epsilon$$")) +
-    theme(axis.title=element_text(size=16))
+    theme(axis.title=element_text(size=20))
   
   
   ggsave(demand_plot, filename="../plots/lower_bound_demand.jpeg", bg = "white")  
